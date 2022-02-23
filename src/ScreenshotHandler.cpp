@@ -28,6 +28,8 @@ void ScreenshotHandler::ModifyFileName(char dest[257])
 		std::string filename = "Screenshots\\";
 
 		filename += PlayerCharacter->GetName();
+		filename += " - ";
+		filename += PlayerCharacter->GetRace()->GetName();
 		filename += "\\";
 
 		std::filesystem::create_directories(filename);
@@ -45,9 +47,16 @@ void ScreenshotHandler::ModifyFileName(char dest[257])
 		int   minute = static_cast<int>((time - hour) * 60);
 
 		std::stringstream ss;
-		ss << hour << '.' << std::setw(2) << minute;
+		ss << hour << '.' << std::setw(2) << std::setfill('0') << minute;
 		filename += ss.str();
-		filename += hour < 12 ? " AM" : " PM";
+		filename += hour < 12 ? "AM" : "PM";
+
+		if (std::filesystem::exists(filename + ".png")) {
+			int fixName = 1;
+			while (std::filesystem::exists(filename + " - " + std::to_string(fixName) + ".png"))
+				fixName++;
+			filename += " - " + std::to_string(fixName);
+		}
 
 		filename += ".png";
 		logger::info(FMT_STRING("filename {}"sv), filename);

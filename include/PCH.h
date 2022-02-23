@@ -1,5 +1,5 @@
 #pragma once
-//#undef NDEBUG
+
 #pragma warning(push)
 #if defined(FALLOUT4)
 #include "RE/Fallout.h"

@@ -35,11 +35,11 @@ protected:
 		static void Install()
 		{
 #if defined(SKYRIMAE)
+			REL::Relocation<std::uintptr_t> TakeScreenshot_hook	{ REL::ID(36853), 0x69 };
 #else
-			REL::Relocation<std::uintptr_t> TakeScreenshot_hook{ REL::ID(35882), 0x73 };  // 1405C0610 + 73
+			REL::Relocation<std::uintptr_t> TakeScreenshot_hook	{ REL::ID(35882), 0x73 };
 #endif
 			stl::write_thunk_call<TakeScreenshot>(TakeScreenshot_hook.address());
-
 		}
 	};
 
