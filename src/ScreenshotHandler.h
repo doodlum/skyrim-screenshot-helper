@@ -15,17 +15,20 @@ public:
 		Hooks::Install();
 	}
 
-	static const char*  GetCurrentLocationName(RE::Actor* a_actor);
+	static const char* GetCurrentLocationName(RE::Actor* a_actor);
 
-	#define FILENAME_MAX_LENGTH 257
+	//static std::wstring SanitizeChars(std::wstring a_str);
+
+	#define PRINT_CHAR_MAX_LENGTH 257
+	#define FILENAME_WCHAR_MAX_LENGTH 264
 
 	std::wstring   filename;
 
 	std::string FilenameToString();
-	void        FilenameToCString(char* a_str);
 
 	void           ResetName();
 	void           Add(const char* a_str);
+	void           AddSanitized(const char* a_str);
 	void           ModifyFileName(char* dest);
 	const wchar_t* FinalFileName();
 

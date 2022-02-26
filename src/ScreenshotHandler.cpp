@@ -1,27 +1,28 @@
 #include "ScreenshotHandler.h"
 #include "WStringUtil.h"
+#include <Shlobj_core.h>
 
 void ScreenshotHandler::ResetName()
 {
 	filename = WStringUtil::ConvertStringToWString("");
 }
 
-
 void ScreenshotHandler::Add(const char* a_str)
 {
-	filename += WStringUtil::ConvertStringToWString(a_str);
+	filename += WStringUtil::ConvertStringToWString(a_str).c_str();
 }
 
+void ScreenshotHandler::AddSanitized(const char* a_str)
+{
+	WCHAR buffer[MAX_PATH];
+	wcscpy_s(buffer, WStringUtil::ConvertStringToWString(a_str).c_str());
+	PathCleanupSpec(NULL, buffer);
+	filename += buffer;
+}
 
 std::string ScreenshotHandler::FilenameToString()
 {
 	return WStringUtil::ConvertWStringToString(filename);
-}
-
-
-void ScreenshotHandler::FilenameToCString(char* dest)
-{
-	strcpy_s(dest, FILENAME_MAX_LENGTH, WStringUtil::ConvertWStringToString(filename).c_str());
 }
 
 
@@ -50,12 +51,15 @@ void ScreenshotHandler::ModifyFileName(char* dest)
 
 	if (PlayerCharacter && Calendar) {
 		ResetName();
+#ifdef WABBAJACK
+		Add("[NoDelete] Screenshots\\");
+#else
 		Add("Screenshots\\");
-
+#endif
 		if (PlayerCharacter->GetName() && PlayerCharacter->GetRace() && PlayerCharacter->GetRace()->GetName()) {
-			Add(PlayerCharacter->GetName());
+			AddSanitized(PlayerCharacter->GetName());
 			Add(" - ");
-			Add(PlayerCharacter->GetRace()->GetName());
+			AddSanitized(PlayerCharacter->GetRace()->GetName());
 			Add("\\");
 		} else {
 			logger::error("Failed to access player information");
@@ -66,15 +70,15 @@ void ScreenshotHandler::ModifyFileName(char* dest)
 
 		auto currentLocationName = GetCurrentLocationName(PlayerCharacter);
 		if (currentLocationName) {
-			Add(currentLocationName);
+			AddSanitized(currentLocationName);
 			Add(" - ");
 		} else {
 			logger::warn("Failed to find a location name");
 		}
 
-		char timedate[504];
+		char timedate[504]; // This matches what game code does
 		Calendar->GetTimeDateString(timedate, 0x200u, 1);
-		Add(timedate);
+		AddSanitized(timedate);  // We can't sanitize due to special character handling
 
 
 		if (std::filesystem::exists(FilenameToString() + ".png")) {
@@ -87,16 +91,25 @@ void ScreenshotHandler::ModifyFileName(char* dest)
 
 		Add(".png");
 
-		FilenameToCString(dest);
+		auto finalFilename = WStringUtil::ReplaceWCSWithPattern(filename, L":", L"꞉");
+		if ((finalFilename).size() <= (sizeof(wchar_t) * FILENAME_WCHAR_MAX_LENGTH)) {
+			if (filename.size() <= PRINT_CHAR_MAX_LENGTH) {
+				strcpy_s(dest, PRINT_CHAR_MAX_LENGTH, WStringUtil::ConvertWStringToString(filename).c_str());
+			} else {
+				strcpy_s(dest, PRINT_CHAR_MAX_LENGTH, "Screenshots\\");
+				logger::info("File name was too large to print ingame");
+			}
+			filename = finalFilename;
+		} else {
+			logger::error("File name was too large to be renamed");
+		}
+
 	}
 }
 
 
 const wchar_t* ScreenshotHandler::FinalFileName()
 {
-	filename = WStringUtil::ReplaceWCSWithPattern(filename, L":", L"꞉");
-
 	logger::info(FMT_STRING("Attempting to create save file at {}"sv), FilenameToString());
-
 	return filename.c_str();
 }
