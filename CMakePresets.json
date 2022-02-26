@@ -87,9 +87,10 @@
 			"name": "post-ae"
 		},
 		{
-			"binaryDir": "${sourceDir}/build/vr",
+			"binaryDir": "${sourceDir}/build/pre-ae-w",
 			"cacheVariables": {
-				"BUILD_SKYRIMVR": true
+				"BUILD_SKYRIMSE": true,
+				"WABBAJACK": true
 			},
 			"inherits": [
 				"cmake-dev",
@@ -97,8 +98,23 @@
 				"windows",
 				"vs2022-windows"
 			],
-			"name": "vr"
+			"name": "pre-ae-w"
+		},
+		{
+			"binaryDir": "${sourceDir}/build/post-ae-w",
+			"cacheVariables": {
+				"BUILD_SKYRIMAE": true,
+				"WABBAJACK": true
+			},
+			"inherits": [
+				"cmake-dev",
+				"vcpkg",
+				"windows",
+				"vs2022-windows"
+			],
+			"name": "post-ae-w"
 		}
+
 	],
 	"version": 3
 }
