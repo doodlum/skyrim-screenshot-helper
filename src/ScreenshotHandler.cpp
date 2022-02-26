@@ -1,62 +1,62 @@
 #include "ScreenshotHandler.h"
+#include "WStringUtil.h"
 
-std::string NumberToOrdinal(size_t number)
+void ScreenshotHandler::ResetName()
 {
-	std::string suffix = "th";
-	if (number % 100 < 11 || number % 100 > 13) {
-		switch (number % 10) {
-		case 1:
-			suffix = "st";
-			break;
-		case 2:
-			suffix = "nd";
-			break;
-		case 3:
-			suffix = "rd";
-			break;
-		}
-	}
-	return std::to_string(number) + suffix;
+	filename = WStringUtil::ConvertStringToWString("");
 }
 
-const char* GetCurrentLocationName(RE::PlayerCharacter* PlayerCharacter) 
+
+void ScreenshotHandler::Add(const char* a_str)
 {
-	auto location = PlayerCharacter->GetCurrentLocation();
-	while (location) {
-		auto locationName = location->GetName(); 
-		if (locationName && strlen(locationName) != 0) {
+	filename += WStringUtil::ConvertStringToWString(a_str);
+}
+
+
+std::string ScreenshotHandler::FilenameToString()
+{
+	return WStringUtil::ConvertWStringToString(filename);
+}
+
+
+void ScreenshotHandler::FilenameToCString(char* dest)
+{
+	strcpy_s(dest, FILENAME_MAX_LENGTH, WStringUtil::ConvertWStringToString(filename).c_str());
+}
+
+
+const char* ScreenshotHandler::GetCurrentLocationName(RE::Actor* a_actor)
+{
+	for (auto location = a_actor->GetCurrentLocation(); location; location = location->parentLoc) {
+		auto locationName = location->GetName();
+		if (locationName && strlen(locationName))
 			return locationName;
-		} else {
-			location = location->parentLoc;
-		}	
 	}
 
-	auto worldspace = PlayerCharacter->GetWorldspace();
-	while (worldspace) {
-		auto worldspaceName = location->GetName();
-		if (worldspaceName && strlen(worldspaceName) != 0) {
+	for (auto worldspace = a_actor->GetWorldspace(); worldspace; worldspace = worldspace->parentWorld) {
+		auto worldspaceName = worldspace->GetName();
+		if (worldspaceName && strlen(worldspaceName))
 			return worldspaceName;
-		} else {
-			worldspace = worldspace->parentWorld;
-		}
 	}
 
 	return nullptr;
 }
 
-void ScreenshotHandler::ModifyFileName(char dest[257])
+
+void ScreenshotHandler::ModifyFileName(char* dest)
 {
 	auto PlayerCharacter = RE::PlayerCharacter::GetSingleton();
 	auto Calendar = RE::Calendar::GetSingleton();
 
 	if (PlayerCharacter && Calendar) {
-		std::string filename = "Screenshots\\";
+		ResetName();
+		Add("Screenshots\\");
 
 		if (PlayerCharacter->GetName() && PlayerCharacter->GetRace() && PlayerCharacter->GetRace()->GetName()) {
-			filename += PlayerCharacter->GetName();
-			filename += " - ";
-			filename += PlayerCharacter->GetRace()->GetName();
-			filename += "\\";
+			Add(PlayerCharacter->GetName());
+			Add(" - ");
+			Add(PlayerCharacter->GetRace()->GetName());
+			Add("\\");
 		} else {
 			logger::error("Failed to access player information");
 		}
@@ -66,38 +66,37 @@ void ScreenshotHandler::ModifyFileName(char dest[257])
 
 		auto currentLocationName = GetCurrentLocationName(PlayerCharacter);
 		if (currentLocationName) {
-			filename += currentLocationName;
-			filename += " - ";
+			Add(currentLocationName);
+			Add(" - ");
 		} else {
 			logger::warn("Failed to find a location name");
 		}
 
-		if (Calendar->GetDay() && Calendar->GetMonthName() != "Bad Month" && Calendar->GetHour()) {
-			filename += NumberToOrdinal(static_cast<int>(Calendar->GetDay()));
-			filename += " of " + Calendar->GetMonthName() + ", ";
+		char timedate[504];
+		Calendar->GetTimeDateString(timedate, 0x200u, 1);
+		Add(timedate);
 
-			float time = Calendar->GetHour();
-			int   hour = static_cast<int>(time);
-			int   minute = static_cast<int>((time - hour) * 60);
 
-			std::stringstream ss;
-			ss << (hour > 12 ? hour - 12 : (hour < 1 ? hour + 12 : hour)) << '.' << std::setw(2) << std::setfill('0') << minute;
-			filename += ss.str();
-			filename += hour < 12 ? "AM" : "PM";
-		} else {
-			logger::error("Failed to access calendar");
-		}
-
-		if (std::filesystem::exists(filename + ".png")) {
+		if (std::filesystem::exists(FilenameToString() + ".png")) {
 			int fixName = 1;
-			while (std::filesystem::exists(filename + " - " + std::to_string(fixName) + ".png"))
+			while (std::filesystem::exists(FilenameToString() + " - " + std::to_string(fixName) + ".png"))
 				fixName++;
-			filename += " - " + std::to_string(fixName);
+			Add(" - ");
+			Add(std::to_string(fixName).c_str());
 		}
 
-		filename += ".png";
-		logger::info(FMT_STRING("Save file created at {}"sv), filename);
+		Add(".png");
 
-		strcpy_s(dest, 257, filename.c_str());
+		FilenameToCString(dest);
 	}
+}
+
+
+const wchar_t* ScreenshotHandler::FinalFileName()
+{
+	filename = WStringUtil::ReplaceWCSWithPattern(filename, L":", L"꞉");
+
+	logger::info(FMT_STRING("Attempting to create save file at {}"sv), FilenameToString());
+
+	return filename.c_str();
 }
