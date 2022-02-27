@@ -78,7 +78,7 @@ void ScreenshotHandler::ModifyFileName(char* dest)
 
 		char timedate[504]; // This matches what game code does
 		Calendar->GetTimeDateString(timedate, 0x200u, 1);
-		AddSanitized(timedate);  // We can't sanitize due to special character handling
+		Add(timedate);  // We can't sanitize due to special character handling
 
 
 		if (std::filesystem::exists(FilenameToString() + ".png")) {
