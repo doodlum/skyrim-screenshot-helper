@@ -41,6 +41,10 @@ if (NOT BUILD_DEBUG)
 	add_compile_definitions(NDEBUG)
 endif()
 
+if (WABBAJACK)
+	add_compile_definitions(WABBAJACK)
+endif()
+
 get_filename_component(
 	Skyrim64Path
 	"[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Bethesda Softworks\\Skyrim Special Edition;installed path]"
